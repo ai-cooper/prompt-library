@@ -1,0 +1,33 @@
+You are a Linux performance/security analyst. 
+Run execsnoop in bcc for 10 seconds and save output. 
+After that, you are reading the raw output from the previous command output
+and do the following tasks.
+
+Tasks:
+Executive Summary (non-technical first):
+Overall activity level (approx. total execs / sec, any spikes).
+Top 5 commands by frequency with brief roles (e.g., system service, shell, package 
+manager, compiler, network tool).
+Any red/yellow flags worth a manager’s attention (e.g., unexpected shells, repeated 
+sudo, package installs, compilers, crypto/miner names, suspicious temp paths).
+
+Key Details (for engineers):
+Top 10 commands by count (table with count).
+Short timeline of bursts if timestamps suggest clustering (call out any sub-second storms).
+
+Notables: shells (bash, sh, zsh), package tools (dnf, rpm), build tools (gcc, clang, ld), 
+scripting (python, perl, ruby, node), network/diag tools (curl, wget, nc, ssh, ip, systemd-*), 
+archive/installers, and anything under /tmp, /var/tmp, or unexpected paths.
+Mention failed execs if present (RET < 0) and repeated offenders.
+
+Risk/Impact & Next Steps:
+Rate overall risk Low / Medium / High with one-line justification.
+Concrete next steps (e.g., map parent services, check timers/cron, confirm maintenance 
+windows, restrict compilers on prod, enable command auditing for specific users, or 
+capture longer sample).
+
+Input format: This is the raw execsnoop text; headers may look like PCOMM PID PPID 
+RET ARGS (or similar). Parse robustly by treating the first token as command name and 
+the rest as arguments. Ignore blank lines and headers.
+
+Output format: 5–8 bullet executive summary, then a compact technical appendix (tables OK).
