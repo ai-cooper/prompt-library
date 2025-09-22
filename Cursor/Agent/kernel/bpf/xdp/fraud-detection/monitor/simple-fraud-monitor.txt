@@ -1,0 +1,134 @@
+You are a Linux eBPF/XDP engineer on RHEL10.
+Please follow the instructions below, and be ready to detect fraud from other machine.
+
+0) Lab Info
+  Sensor (RHEL10): where we’ll run the XDP detector (attach to the ingress NIC, e.g., eth0) on this machine.
+  Generator (MacOS): where I’ll send “fraud-like” traffic (SYN bursts, login spray, etc).
+
+1) Prereqs on the Sensor (RHEL10)
+
+bash:
+# Tools & headers
+sudo dnf -y install clang llvm bpftool bpftrace libbpf libbpf-devel kernel-headers make git jq
+
+# (Optional) EPEL for extra generators like hping3 if you want it
+# sudo dnf -y install epel-release && sudo dnf -y install hping3
+
+# Ensure BPF FS and ftrace are available
+sudo mount -t bpf bpf /sys/fs/bpf 2>/dev/null || true
+sudo mount -t tracefs nodev /sys/kernel/debug/tracing 2>/dev/null || true
+
+2) Minimal XDP detector (counts TCP SYNs per source, 1-second sliding window, threshold alert)
+This XDP program keeps a per-source IPv4 entry with (second, count). 
+When a source sends ≥ THRESHOLD SYNs within the same second, it prints a kernel alert you can read live.
+
+Create xdp_syn_guard.c:
+// xdp_syn_guard.c
+// Detects sources that send too many TCP SYNs within a 1-second window.
+// Action: PASS traffic; emit alert via bpf_printk for visibility.
+
+#include <linux/bpf.h>
+#include <bpf/bpf_helpers.h>
+#include <linux/if_ether.h>
+#include <linux/ip.h>
+#include <linux/tcp.h>
+
+struct val_t {
+    __u64 sec;     // second bucket (epoch seconds)
+    __u32 count;   // SYNs seen in this second
+};
+
+struct {
+    __uint(type, BPF_MAP_TYPE_LRU_HASH);
+    __uint(max_entries, 65536);
+    __type(key, __u32);      // src IPv4 (network order)
+    __type(value, struct val_t);
+} syn_cnt_map SEC(".maps");
+
+// Tunables
+static const __u32 THRESHOLD = 200;   // alert if >= 200 SYNs in the same second
+
+// Fast helpers
+static __always_inline int parse_ipv4(void *data, void *data_end, struct iphdr **iph)
+{
+    struct ethhdr *eth = data;
+    if ((void*)(eth + 1) > data_end) return -1;
+    if (eth->h_proto != __constant_htons(ETH_P_IP)) return -1;
+
+    *iph = data + sizeof(*eth);
+    if ((void*)(*iph + 1) > data_end) return -1;
+    return 0;
+}
+
+static __always_inline int parse_tcp(void *data, void *data_end, struct iphdr *iph, struct tcphdr **tcph)
+{
+    if (iph->protocol != IPPROTO_TCP) return -1;
+    __u32 ihl = iph->ihl * 4;
+    *tcph = (void*)iph + ihl;
+    if ((void*)(*tcph + 1) > data_end) return -1;
+    return 0;
+}
+
+SEC("xdp")
+int xdp_syn_guard(struct xdp_md *ctx)
+{
+    void *data     = (void*)(long)ctx->data;
+    void *data_end = (void*)(long)ctx->data_end;
+
+    struct iphdr *iph;
+    if (parse_ipv4(data, data_end, &iph) < 0) return XDP_PASS;
+
+    struct tcphdr *tcph;
+    if (parse_tcp(data, data_end, iph, &tcph) < 0) return XDP_PASS;
+
+    // Only count SYN (and ignore ACK). Classic signal for scans/floods/credential-spray prelude.
+    if (!(tcph->syn) || tcph->ack) return XDP_PASS;
+
+    __u32 saddr = iph->saddr; // network order
+    // Convert ns->seconds for a simple 1s bucket
+    __u64 now_ns = bpf_ktime_get_ns();
+    __u64 now_s  = now_ns / 1000000000ULL;
+
+    struct val_t *v = bpf_map_lookup_elem(&syn_cnt_map, &saddr);
+    if (!v) {
+        struct val_t init = {.sec = now_s, .count = 1};
+        bpf_map_update_elem(&syn_cnt_map, &saddr, &init, BPF_ANY);
+    } else {
+        if (v->sec == now_s) {
+            v->count++;
+        } else {
+            v->sec = now_s;
+            v->count = 1;
+        }
+        if (v->count == THRESHOLD) {
+            // Print once when threshold is hit (not every packet after)
+            // %pI4 formats IPv4 in dotted-decimal
+            bpf_printk("XDP_SYN_GUARD ALERT: src=%pI4 rate>=%u SYN/s\n", &saddr, THRESHOLD);
+        }
+    }
+
+    return XDP_PASS; // detection only; no drop
+}
+
+char _license[] SEC("license") = "GPL";
+
+
+
+Build & attach (replace ETH with your ingress NIC, e.g., eth0):
+bash:
+#  Build
+clang -O2 -g -target bpf -D__TARGET_ARCH_x86 -c xdp_syn_guard.c -o xdp_syn_guard.o
+
+#  Attach to NIC (ETH=your device)
+ETH=$(ip -o -4 route show to default | awk '{print $5}' | head -1)
+sudo ip link set dev "$ETH" xdp off 2>/dev/null || true
+sudo ip -force link set dev "$ETH" xdp obj ./xdp_syn_guard.o sec xdp
+
+# Verify
+sudo bpftool net
+# You should see XDP attached to your interface
+
+# Live alerts
+sudo cat /sys/kernel/debug/tracing/trace_pipe
+# Keep this running in a separate terminal to see alerts
+
