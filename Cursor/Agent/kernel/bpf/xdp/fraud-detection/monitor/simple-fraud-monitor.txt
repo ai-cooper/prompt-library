@@ -32,6 +32,7 @@ Create xdp_syn_guard.c:
 #include <linux/if_ether.h>
 #include <linux/ip.h>
 #include <linux/tcp.h>
+#include <linux/in.h>
 
 struct val_t {
     __u64 sec;     // second bucket (epoch seconds)
