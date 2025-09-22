@@ -1,0 +1,20 @@
+How to generate "fraud-like" traffic from MacOS? (Sequoia 15.6.1)
+
+Replace TARGET_IP with the Sensor’s IP.
+
+a) SYN burst
+sudo nping --tcp -p 80 --flags SYN --rate 500 --count 2000 TARGET_IP
+
+
+
+
+Output on Sensor (RHEL10):
+$ sudo cat /sys/kernel/debug/tracing/trace_pipe
+ irq/171-iwlwifi-33259   [006] ..s21  6190.699509: bpf_trace_printk: XDP_SYN_GUARD ALERT: src=192.168.11.19 rate>=200 SYN/s
+
+ irq/171-iwlwifi-33259   [006] ..s21  6191.499498: bpf_trace_printk: XDP_SYN_GUARD ALERT: src=192.168.11.19 rate>=200 SYN/s
+
+ irq/171-iwlwifi-33259   [006] ..s21  6192.501617: bpf_trace_printk: XDP_SYN_GUARD ALERT: src=192.168.11.19 rate>=200 SYN/s
+
+ irq/171-iwlwifi-33259   [006] ..s21  6193.505671: bpf_trace_printk: XDP_SYN_GUARD ALERT: src=192.168.11.19 rate>=200 SYN/s
+
