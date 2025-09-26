@@ -1,0 +1,105 @@
+Task: create, build and run a tiny HTTP server (Go) on RHEL10 (port 80) and trace capability checks using BCC.
+
+1) Create tiny_httpd.go
+-----------------------
+Create a file named `tiny_httpd.go` with this contents (very small, listens on :80):
+
+```go
+package main
+import (
+	"net/http"
+	"log"
+)
+func main() {
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("tiny httpd: it works\n"))
+	})
+	log.Fatal(http.ListenAndServe(":80", nil))
+}
+
+2) Build (on RHEL10)
+Run these commands (install Go if needed):
+
+# (if go is missing) sudo dnf install -y golang
+# build
+go build -o tiny_httpd tiny_httpd.go
+ls -l tiny_httpd
+
+3) Verify / test locally (optional unprivileged test)
+You can test on an unprivileged port first:
+
+./tiny_httpd & pid=$!
+curl -sS http://127.0.0.1:8080/ || true   # if you change ListenAndServe to :8080 for test
+kill $pid
+
+(But we'll run on port 80 below using capsh so we keep production code listening on :80.)
+
+4) Start the BCC capable tracer (terminal A)
+Open a terminal as root and run the BCC capable tool to observe capability checks in real time:
+
+sudo /usr/share/bcc/tools/capable
+
+This prints lines like:
+TIME UID PID COMM CAP NAME ...
+Keep this terminal open so you can see events while you launch tiny_httpd.
+
+5) Launch tiny_httpd as nobody while giving CAP_NET_BIND_SERVICE to the child process (terminal B)
+We want the binary to run as user nobody, bind port 80 (privileged), and only have net-bind capability in its ambient set. To successfully switch to a non-root user and set ambient capabilities we must also allow the process to set UID/GID and setpcap (so we add those temporarily in the Permitted/Effective set). Use this capsh invocation (run as root):
+
+# run tiny_httpd as nobody with CAP_NET_BIND_SERVICE in ambient set
+sudo capsh --caps='cap_net_bind_service,cap_setgid,cap_setuid,cap_setpcap+eip' \
+          --keep=1 \
+          --user=nobody \
+          --addamb='cap_net_bind_service' -- -c './tiny_httpd' &
+# get the child tiny_httpd PID
+sleep 0.5
+pgrep -af tiny_httpd   # note the PID of the real tiny_httpd process (not the capsh launcher)
+
+Notes:
+--caps='...+eip' places listed caps into Permitted (p), Effective (e) and Inheritable (i) sets as needed; we include cap_setuid, cap_setgid, and cap_setpcap so capsh can change uid/gid and set ambient caps. The resulting running server will have CAP_NET_BIND_SERVICE in its ambient/perm/effective sets (visible to tools like getpcaps).
+
+--keep=1 preserves current environment for the child; it’s a common example option used in debugging flows (keeps capsh process around in some usages). If your capsh version complains, remove --keep=1.
+
+6) Confirm the capabilities of the running tiny_httpd process
+After starting tiny_httpd, note the tiny_httpd PID (from pgrep -af tiny_httpd or ps aux | grep tiny_httpd) and then:
+
+# suppose PID is $PID
+PID=$(pgrep -f tiny_httpd)
+# view process capability sets (requires root)
+sudo getpcaps $PID
+# you can also inspect the parent capsh command:
+ps -o pid,ppid,uid,gid,cmd -p $PID
+
+Expected: getpcaps $PID should show cap_net_bind_service present for the tiny_httpd process.
+
+7) Observe capability checks with BCC capable (while tiny_httpd running)
+In the terminal running sudo /usr/share/bcc/tools/capable you should see capability-check events printed live. To filter output to just the tiny_httpd PID, in a second terminal run:
+
+# save capable output to a file for filtering (or use grep on the fly)
+sudo /usr/share/bcc/tools/capable | tee /tmp/capable.log & CAPABLE_PID=$!
+# Wait a second, then filter by tiny_httpd PID:
+sleep 1
+PID=$(pgrep -f tiny_httpd)
+# Tail and filter (in another terminal window)
+sudo tail -n +1 -f /tmp/capable.log | grep --line-buffered "$PID"
+
+Or, more simply: run capable in its terminal and manually watch the PID/COMM columns for your tiny_httpd process (the tool prints UID, PID, COMM, CAP, NAME, AUDIT columns).
+
+8) Trigger activity and observe checks
+From a different shell (non-root), try to make a privileged call from the tiny_httpd process context (e.g., it already bound port 80 at start). If you want to provoke additional capability checks, run small commands as nobody (in examples) or send requests:
+
+# From another machine or local
+curl -v http://127.0.0.1/
+# or from the host as user nobody (test spawn):
+sudo -u nobody -s -- /bin/sh -c 'id; /proc/$(pgrep -f tiny_httpd)/status | head -n 10' 2>/dev/null || true
+
+Watch capable output to see capability checks originating from the tiny_httpd PID/COMM.
+
+9) Clean up
+When done stop the tiny_httpd and capable:
+
+# kill tiny_httpd
+sudo pkill -f tiny_httpd
+# stop capable if it was backgrounded via tee
+sudo pkill -f /usr/share/bcc/tools/capable
+
