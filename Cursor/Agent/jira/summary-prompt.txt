@@ -1,0 +1,14 @@
+Please provide a concise summary for Jira issues {issue_keys}:
+
+Issue Key: {issue_key}  
+Summary: {summary}  
+Component: {component}  
+Priority: {priority}  
+Description: {description}  
+
+Please provide:
+1. Root Cause Analysis: What seems to be the underlying problem?
+2. Impact Assessment: How severe is this issue?
+3. Technical Summary: Key technical details in plain language
+4. Recommended Actions: Suggested next steps
+5. Keywords: 3-5 relevant tags for categorization
