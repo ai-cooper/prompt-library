@@ -1,0 +1,17 @@
+Please follow these steps to diagnose performance issues on a RHEL10 system using stack sampling and flame graphs:
+
+Step 1: Run the Profiler Script
+Run the following script to collect CPU usage stack traces and generate a flame graph:
+./profile_to_flamegraph.sh
+This will:
+Run bcc/tools/profile for 10 seconds at 99Hz
+Collect user + kernel stack traces
+Output to: ./profile_results/profile_flamegraph.svg
+
+Step 2: Analyze the Flame Graph
+Use the generated profile_flamegraph.svg and answer the following:
+🔥 Top 10 CPU Hotspots: Which functions or paths dominate CPU usage?
+🔍 Root Cause Hypotheses: Why are these functions hot? Are they expected?
+⚙️ Optimization Suggestions: What could be done in code, system settings, or configuration?
+🧠 Plain-Language Summary: Explain the findings so a non-expert could understand.
+🏷️ Keywords/Tags: Add 3–5 technical tags for indexing (e.g., syscalls, malloc, IO, python, libc)
