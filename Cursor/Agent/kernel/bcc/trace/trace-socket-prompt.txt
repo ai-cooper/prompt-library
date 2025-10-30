@@ -1,0 +1,28 @@
+You are a system observability assistant.
+
+Please run the following BCC command to trace kernel-level socket allocation and release activity on a RHEL10 system:
+cd /usr/share/bcc/tools && sudo timeout 10s ./trace -tKU \
+  'r::sock_alloc "open %llx", retval' \
+  '__sock_release "close %llx", arg1'
+
+After running it, please provide:
+🔍 Analysis of the Results
+📄 Sample Output Interpretation
+What does each line represent?
+What are the timestamps, PIDs, function names, and hex values?
+
+🧠 Explanation of Values
+What do the retval and arg1 values mean in the context of socket operations?
+How can I map these hex values to socket objects or state?
+
+🔁 Operational Meaning
+What does it tell me about socket lifecycle (creation and release)?
+Can I use this to detect socket leaks or abnormal socket behavior?
+
+⚠️ Gotchas or Considerations
+Could this miss short-lived sockets?
+What’s the overhead of running this trace?
+
+💡 Bonus (Optional)
+Suggest a variation of the trace that includes process names or filters by specific syscall behavior.
+Provide a one-liner summary of the socket activity seen in this 10-second window.
