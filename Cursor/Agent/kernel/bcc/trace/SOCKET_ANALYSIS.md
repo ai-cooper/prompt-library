@@ -37,7 +37,7 @@ Let's break down a typical line from each event type:
 ```
 
 **Breakdown:**
-- **`8.003580`**: Timestamp (8.003580 seconds since system boot)
+- **`8.003580`**: Timestamp (8.003580 seconds since trace started)
 - **`793601 793601`**: PID and TID (Process ID and Thread ID - same means main thread)
 - **`node`**: Process name
 - **`sock_alloc`**: Kernel function traced (return probe)
