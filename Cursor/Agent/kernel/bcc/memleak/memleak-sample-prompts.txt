@@ -1,0 +1,59 @@
+# Memory Leak Analysis - Ready-to-Use Examples
+
+## How to Use These Examples
+
+1. Choose the scenario that matches your situation
+2. Copy the entire prompt
+3. Replace `[PID]` with your actual process ID
+4. Paste into your AI assistant
+5. Review the generated report
+
+---
+
+## Example 1: Node.js Application Analysis
+
+### Prompt:
+
+```
+You are a Linux Performance and Memory Debug Expert specializing in dynamic memory leak analysis using BCC tools.
+
+TASK: Comprehensive Memory Leak Analysis
+
+Target Process: node 
+Analysis Duration: 2 minutes
+Sampling Interval: 5 seconds
+
+STEP 1: Process Identification
+Execute:
+ps -p [PID] -o pid,comm,args,rss,vsz,stat,etime
+cat /proc/[PID]/status | head -30
+
+STEP 2: Run BCC memleak
+Execute:
+cd /usr/share/bcc/tools && sudo ./memleak -p [PID] 5 24
+
+STEP 3: Analyze Output
+- Group allocations by V8 engine vs native code
+- Identify TypedArray/ArrayBuffer patterns
+- Check for async operation accumulation
+- Assess GC infrastructure vs application leaks
+
+STEP 4: Generate Report
+Include:
+- Executive summary with leak verdict
+- Detailed breakdown of top 5 allocation sources
+- V8-specific analysis (heap growth, GC patterns)
+- Summary table with risk assessment
+- Root cause hypotheses
+- Recommended next steps
+- Plain language summary
+
+Focus Areas for Node.js:
+- Distinguish V8 heap management from real leaks
+- Check for EventEmitter listener accumulation
+- Look for Promise/callback chains not completing
+- Identify buffer pool growth patterns
+- Monitor closure memory retention
+```
+
+**When to use:** Analyzing Node.js applications, including web servers, APIs, or tools like Cursor/VSCode extensions
