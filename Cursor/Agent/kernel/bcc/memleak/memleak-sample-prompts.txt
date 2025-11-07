@@ -57,3 +57,56 @@ Focus Areas for Node.js:
 ```
 
 **When to use:** Analyzing Node.js applications, including web servers, APIs, or tools like Cursor/VSCode extensions
+
+---
+
+## Example 2: Python Web Application
+
+### Prompt:
+
+```
+You are a Linux Performance and Memory Debug Expert specializing in dynamic memory leak analysis.
+
+TASK: Comprehensive Memory Leak Analysis
+
+Target Process: python (PID [REPLACE_WITH_PID])
+Analysis Duration: 2 minutes
+Sampling Interval: 5 seconds
+
+STEP 1: Process Info
+Execute:
+ps -p [PID] -o pid,comm,args,rss,vsz,stat,etime
+cat /proc/[PID]/cmdline | tr '\0' ' '
+
+STEP 2: Run memleak
+Execute:
+cd /usr/share/bcc/tools && sudo ./memleak -p [PID] 5 24
+
+STEP 3: Analysis Focus
+- Separate CPython internals from application code
+- Check for C extension memory leaks
+- Look for reference counting issues
+- Identify dict/list unbounded growth
+- Monitor native library allocations
+
+STEP 4: Report
+Include:
+- Executive summary
+- Top 5 allocation sources with CPython context
+- Differentiation between Python objects and native allocations
+- Reference counting analysis
+- Risk assessment table
+- Debugging recommendations specific to Python
+- Plain language summary
+
+Python-Specific Checks:
+- PyObject_* allocation patterns
+- Third-party C extension leaks
+- NumPy/Pandas array allocations
+- Database connection pooling
+- Cache decorator memory retention
+```
+
+**When to use:** Django, Flask, FastAPI applications, or Python services
+
+---
