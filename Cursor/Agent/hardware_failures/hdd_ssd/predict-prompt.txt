@@ -1,0 +1,65 @@
+You are a Linux reliability and hardware diagnostics expert.
+Your task is to predict potential HDD/SSD failures on a RHEL10 system.
+
+For the next 60 seconds:
+1. Continuously collect SMART and kernel disk I/O diagnostics.
+2. Capture error patterns, performance degradation, and temperature fluctuations.
+
+Run these commands in a monitoring loop for 60 seconds:
+
+# List devices
+smartctl --scan
+
+# Periodic SMART stats
+for dev in /dev/sd? /dev/nvme?n1; do
+  echo "==== SMART DATA for $dev at $(date) ===="
+  smartctl -a $dev
+done
+
+# Kernel errors, timeouts & resets
+journalctl --since "60 seconds ago" -k | grep -iE "i/o|timeout|reset|nvme|error|fail|blk"
+
+# NVMe live statistics if available
+for dev in /dev/nvme?n1; do
+  echo "==== NVMe SMART LOG for $dev ===="
+  nvme smart-log $dev
+done
+
+After data collection, analyze:
+
+A. Disk health status and degradation trends
+B. SMART key attributes:
+   - Reallocated_Sector_Ct
+   - Current_Pending_Sector
+   - Offline_Uncorrectable
+   - Media_Wearout_Indicator (SSD)
+   - Percentage Used (NVMe)
+   - Data_Units_Read / Written
+   - Temperature and throttling events
+
+C. Kernel error indicators:
+   - read/write timeouts
+   - blk discard failures
+   - nvme controller resets
+
+D. Classify system risk level:
+   LOW / MEDIUM / HIGH / CRITICAL (imminent failure)
+
+E. Provide:
+   1. A short summary explaining evidence
+   2. Replacement or backup recommendations
+   3. Commands to run next (deep SMART test, drive clone, monitoring setup)
+
+If the data is not enough, request additional input such as:
+- dmesg output
+- rasdaemon results (ECC/memory correlations)
+- ipmitool sensor data
+
+Return your results in structured format:
+
+{
+  "risk_level": "<LOW|MEDIUM|HIGH|CRITICAL>",
+  "evidence": [...],
+  "recommendation": [...],
+  "next_steps": [...]
+}
