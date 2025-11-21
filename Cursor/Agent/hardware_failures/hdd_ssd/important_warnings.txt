@@ -1,0 +1,9 @@
+"Out of all failed drives, over 56% of them have no
+count in any of the four strong SMART signals, namely
+scan errors, reallocation count, offline reallocation, and
+probational count. In other words, models based only
+on those signals can never predict more than half of the
+failed drives."
+
+Ref:
+https://static.googleusercontent.com/media/research.google.com/ja//archive/disk_failures.pdf
