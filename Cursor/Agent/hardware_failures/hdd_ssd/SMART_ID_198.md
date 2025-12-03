@@ -1057,9 +1057,6 @@ Monitoring Services:
 ### Further Reading
 
 - smartmontools documentation: https://www.smartmontools.org/
-- T13 ATA/ATAPI standards: http://www.t13.org/
-- Understanding SMART: https://www.kernel.org/doc/html/latest/admin-guide/abi-testing.html
-- Drive reliability studies: Backblaze drive stats
 
 ---
 
