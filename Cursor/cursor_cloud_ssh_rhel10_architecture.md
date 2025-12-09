@@ -30,7 +30,7 @@
                 | (4) AI Responses from Cursor Cloud
                 v
 +------------------------------------------------------------------------------------------------+
-|                                     Your Mac (Cursor Client)                                   |
+|                                     My Mac (Cursor Client)                                   |
 |                                                                                                |
 |   +--------------------------------+        +-----------------------------------------------+  |
 |   | Cursor Editor / Chat / UI      |        | SSH Extension (Remote Terminal to RHEL10)     |  |
