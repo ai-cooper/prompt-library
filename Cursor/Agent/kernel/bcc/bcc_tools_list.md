@@ -140,7 +140,6 @@ A comprehensive list of BCC tools available in `/usr/share/bcc/tools/`.
 | **pidpersec** | Shows number of new processes created per second by tracing fork(). |
 | **threadsnoop** | Traces new threads via pthread_create(). |
 | **deadlock** | Detects potential deadlocks by building a mutex wait directed graph and looking for cycles. |
-| **cthreads** | Traces thread creation events in Java or raw pthreads. |
 | **javathreads** | Traces Java thread creation events with thread names. |
 | **ttysnoop** | Watches a tty or pts device and prints the same output appearing on that device. |
 | **bashreadline** | Prints bash commands from all running bash shells on the system. |
