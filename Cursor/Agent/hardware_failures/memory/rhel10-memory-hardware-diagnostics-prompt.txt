@@ -31,11 +31,10 @@ Please do the following:
 3. Check RAS events via rasdaemon (if installed)
    - Check status:
      systemctl status rasdaemon --no-pager
-   - Check logs:
-     ls -l /var/log/rasdaemon
-   - If rasdaemon data exists:
-     - Identify memory-related RAS events (ECC, UE, CE, memory controller, DIMM)
-     - Summarize frequency and severity
+   - Check rasdaemon databases (RHEL 10):
+     ls -l /var/lib/rasdaemon
+   - If *.db files exist:
+     - Identify whether memory-related RAS events (ECC / CE / UE / DIMM) are recorded.
    - If rasdaemon is not installed or not running:
      - Explicitly state that rasdaemon data is unavailable
 
