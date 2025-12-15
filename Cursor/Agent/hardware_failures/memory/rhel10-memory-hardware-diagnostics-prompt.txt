@@ -1,0 +1,78 @@
+You are a senior Linux hardware reliability engineer working on RHEL 10.
+
+Your task is to detect **hardware-related memory errors** using:
+- Kernel logs (MCE / EDAC / ECC)
+- EDAC sysfs counters
+- RAS events via rasdaemon (if present)
+
+Focus ONLY on hardware error signals. Do NOT analyze memory usage or performance.
+
+Please do the following:
+
+1. Check kernel logs for memory hardware errors
+   - Run:
+     dmesg -T | egrep -i 'mce|machine check|hardware error|edac|ecc|uncorrected|corrected|ue|ce|ras|poison|memory failure|page offline'
+   - If available, also run:
+     journalctl -k --no-pager | egrep -i 'mce|machine check|hardware error|edac|ecc|uncorrected|corrected|ue|ce|ras|poison|memory failure|page offline'
+   - Summarize:
+     * Whether memory-related hardware errors are present
+     * Clearly highlight **Uncorrected (UE)**, **Fatal**, or **Memory failure** events
+
+2. Check ECC / EDAC counters (if supported)
+   - If this directory exists:
+     /sys/devices/system/edac/mc
+   - Run:
+     cat /sys/devices/system/edac/mc/mc*/ce_count
+     cat /sys/devices/system/edac/mc/mc*/ue_count
+   - Explain:
+     * What CE (Corrected Error) and UE (Uncorrected Error) mean
+     * Whether the values suggest transient issues or potential DIMM failure
+
+3. Check RAS events via rasdaemon (if installed)
+   - Check status:
+     systemctl status rasdaemon --no-pager
+   - Check logs:
+     ls -l /var/log/rasdaemon
+   - If rasdaemon data exists:
+     - Identify memory-related RAS events (ECC, UE, CE, memory controller, DIMM)
+     - Summarize frequency and severity
+   - If rasdaemon is not installed or not running:
+     - Explicitly state that rasdaemon data is unavailable
+
+4. Check Machine Check subsystem
+   - Run:
+     ls /sys/devices/system/machinecheck
+   - Briefly explain what its presence indicates about CPU/memory error handling
+
+5. Final assessment (concise)
+   - Hardware memory health: **Green / Yellow / Red**
+   - 1–2 sentences explaining the decision
+   - One concrete next action if Yellow or Red
+     (e.g., monitor CE trend, identify DIMM slot, run vendor diagnostics, plan replacement)
+     
+
+After completing the analysis:
+
+1. Create a final report in Markdown format.
+2. Save the report to the following path:
+
+   /tmp/MEMORY_HARDWARE_ERROR_REPORT.md
+
+3. The report MUST include:
+   - Title: "Memory Hardware Error Report (RHEL 10)"
+   - Report generation timestamp
+   - Short executive summary (2–3 bullet points)
+   - Findings:
+     * Kernel log evidence (MCE / EDAC / ECC / RAS)
+     * EDAC CE / UE counters (if available)
+     * rasdaemon findings (if available)
+   - Final assessment:
+     * Health status: Green / Yellow / Red
+     * One-line justification
+   - Recommended next action     
+
+Important rules:
+- Do NOT install packages
+- Do NOT modify system configuration
+- Use sudo only when required
+- Keep explanations factual and concise
