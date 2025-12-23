@@ -1,14 +1,38 @@
-Please provide a concise summary for Jira issues {issue_keys}:
+Please generate a concise, structured summary for the following Jira issue.
 
-Issue Key: {issue_key}  
-Summary: {summary}  
-Component: {component}  
-Priority: {priority}  
-Description: {description}  
+Input:
+- Issue Key: {issue_key}
+- Summary: {summary}
+- Component: {component}
+- Priority: {priority}
+- Description: {description}
 
-Please provide:
-1. Root Cause Analysis: What seems to be the underlying problem?
-2. Impact Assessment: How severe is this issue?
-3. Technical Summary: Key technical details in plain language
-4. Recommended Actions: Suggested next steps
-5. Keywords: 3-5 relevant tags for categorization
+Please provide the output in the following sections:
+
+1. Root Cause Analysis  
+   - Based only on the provided information.
+   - If unclear, state assumptions explicitly.
+
+2. Impact Assessment  
+   - Describe user/system impact.
+   - Include a severity rating (Low / Medium / High).
+
+3. Technical Summary  
+   - Explain the issue in plain language.
+   - Avoid unnecessary jargon.
+
+4. Recommended Actions  
+   - Concrete next steps (investigation, fix, testing, follow-up).
+
+5. Keywords  
+   - 3–5 short tags suitable for Jira labels.
+
+6. Git Commit Message (optional)  
+   - Provide a commit message, and commit id, and patch from the current directory using git show command.
+   - If insufficient technical detail is available, state that explicitly.
+
+Formatting requirements:
+- Use clear section headers.
+- Keep each section concise (2–5 bullet points or short paragraphs).
+- Do not invent implementation details or code.
+
