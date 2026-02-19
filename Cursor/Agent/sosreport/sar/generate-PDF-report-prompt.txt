@@ -1,0 +1,62 @@
+You are a Linux performance troubleshooting assistant. 
+I want to generate a PDF report using Ksar from a sysstat sa binary file.
+
+Goal
+Create a repeatable procedure to generate report.pdf from:
+sa file: {{SA_FILE}} (example: /var/log/sa/sa18)
+output directory: {{OUT_DIR}} (example: /tmp/ksar-report)
+report name prefix: {{PREFIX}} (example: incident-2026-02-19)
+
+Constraints
+RHEL-based system preferred (RHEL 8/9/10).
+Assume sa file is sysstat binary format.
+Provide two methods:
+GUI method (Ksar interactive)
+Headless method (if feasible) using xvfb-run or equivalent
+If headless export is not supported by the installed Ksar version, clearly state that and fall back to GUI method.
+
+Tasks
+1. Verify prerequisites
+Check if sysstat exists and confirm the sa file is readable.
+Check if ksar is installed. If not, propose installation steps (or download/run method) appropriate for RHEL.
+Confirm Java runtime availability (OpenJDK).
+Output the exact commands to verify each component.
+
+2. Convert sa file into Ksar-importable input
+Determine what format Ksar expects (e.g., sar text output).
+Generate the sar text file from the sa file (include a comprehensive option like all metrics).
+Save it to {{OUT_DIR}}/{{PREFIX}}-sar.txt.
+Include the exact command(s) (e.g., sar -A -f ... > ...) and sanity checks (e.g., head, grep).
+
+3. GUI Method: Step-by-step
+Provide clear click-by-click instructions:
+Launch Ksar
+Import the sar text file
+Select useful charts/metrics for a standard performance report (CPU, run queue/load, memory, swap, disk I/O, network, filesystem if available)
+Export to PDF as {{OUT_DIR}}/{{PREFIX}}-ksar.pdf
+Mention any common pitfalls (timezone, missing sections due to sysstat config, etc.)
+
+4. Headless/Automation Method (only if possible)
+Check if this Ksar build supports CLI export to PDF.
+If yes, provide a working example command to generate the PDF non-interactively.
+If not, propose a practical workaround:
+xvfb-run to run GUI export in a virtual display (only if truly doable)
+Or generate graphs via an alternative (sadf + gnuplot/python) but keep this as fallback, because primary goal is Ksar → PDF.
+
+5. Deliverables
+A final “runbook” section with:
+variables to edit (SA_FILE, OUT_DIR, PREFIX)
+copy-paste commands
+expected outputs
+Keep it concise and operational.
+
+Inputs
+SA_FILE={{SA_FILE}}
+OUT_DIR={{OUT_DIR}}
+PREFIX={{PREFIX}}
+Start by inspecting my environment and printing the exact commands I should run, then provide the full procedure.
+
+Quick example (fill-in values)
+SA_FILE=/Users/you/Documents/analyze/012345/sosreport-host1-2026-02-19-xyz/var/log/sa/sa14
+OUT_DIR=/tmp
+PREFIX=case-12345
