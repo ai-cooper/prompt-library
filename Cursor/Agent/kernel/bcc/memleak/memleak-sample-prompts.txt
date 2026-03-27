@@ -110,3 +110,153 @@ Python-Specific Checks:
 **When to use:** Django, Flask, FastAPI applications, or Python services
 
 ---
+## Example 3: C Application Analysis
+
+### Prompt:
+
+```
+You are a Linux Performance and Memory Debug Expert specializing in C/C++ native memory leak analysis.
+
+TASK: Comprehensive Memory Leak Analysis
+
+Target Process: [REPLACE_WITH_PROCESS_NAME] (PID [REPLACE_WITH_PID])
+Analysis Duration: 2 minutes
+Sampling Interval: 5 seconds
+
+STEP 1: Process Info
+Execute:
+ps -p [PID] -o pid,comm,args,rss,vsz,stat,etime
+cat /proc/[PID]/cmdline | tr '\0' ' '
+cat /proc/[PID]/status
+grep -E 'VmRSS|VmSize|VmData|VmStk|VmExe|VmLib|VmSwap' /proc/[PID]/status
+cat /proc/[PID]/smaps_rollup 2>/dev/null || true
+
+STEP 2: Binary / Mapping Info
+Execute:
+readlink -f /proc/[PID]/exe
+cat /proc/[PID]/maps | tail -n 50
+sudo pmap -x [PID] | tail -n 30
+sudo lsof -p [PID] 2>/dev/null | head -n 50
+
+STEP 3: Run memleak
+Execute:
+cd /usr/share/bcc/tools && sudo ./memleak -p [PID] 5 24
+
+STEP 4: Additional Native Memory Checks
+Execute:
+sudo perf top -p [PID] -g --call-graph dwarf --stdio --timeout 10000 2>/dev/null || true
+grep -iE 'malloc|calloc|realloc|free|mmap|munmap' /proc/[PID]/maps 2>/dev/null || true
+
+If debug symbols are available, also execute:
+sudo gdb -q -p [PID] -batch \
+  -ex "set pagination off" \
+  -ex "thread apply all bt" \
+  -ex "detach" \
+  -ex "quit" 2>/dev/null || true
+
+STEP 5: Analysis Focus
+Analyze the results with emphasis on:
+- Distinguish true memory leaks from intentional caches/pools
+- Identify repeated allocations without matching free()
+- Look for growth from malloc/calloc/realloc/strdup/asprintf/getdelim
+- Check whether memory growth is heap growth, mmap growth, or shared library related
+- Identify suspicious call stacks in application code vs libc / runtime code
+- Look for unbounded container growth, linked list growth, hash table growth, or queue buildup
+- Check for forgotten cleanup paths on error handling
+- Check for leaks during retry loops, reconnect loops, request handling loops, or worker loops
+- Check for per-thread leaks and thread-local storage growth
+- Note whether RSS growth matches memleak output
+- Explain whether this looks like:
+  1. definite leak
+  2. probable leak
+  3. fragmentation / allocator retention
+  4. cache / pool growth
+  5. mmap-based growth not visible as ordinary heap leak
+
+STEP 6: Source-Code Review Guidance
+If source code is available, inspect for:
+- malloc/calloc/realloc without corresponding free
+- strdup/strndup leaks
+- asprintf/vasprintf buffer ownership mistakes
+- getline/getdelim buffers not freed
+- Early return / goto error paths that skip cleanup
+- Lost pointers after reassignment
+- Linked list / tree / hash table nodes never released
+- Reference-count mistakes in custom code
+- Missing fclose/closedir/freeaddrinfo/regfree/unlink cleanup patterns
+- Detached thread resources not reclaimed
+- C library objects requiring dedicated destroy/free APIs
+
+STEP 7: Report
+Produce a Markdown report with these sections:
+
+1. Executive Summary
+- Is there evidence of a memory leak?
+- How confident are you?
+- What is the likely allocation source?
+
+2. Process Memory Overview
+- RSS / VSZ / heap observations
+- Whether memory growth is continuous, bursty, or stable
+
+3. Top 5 Suspected Allocation Sources
+For each source include:
+- Function / stack trace
+- Why it is suspicious
+- Whether it appears in application code, libc, or another library
+- Leak confidence level
+
+4. Leak Classification
+Classify the issue as one or more of:
+- Heap leak
+- mmap leak
+- File/resource leak with memory impact
+- Fragmentation / allocator retention
+- Cache growth
+- Unknown
+
+5. Code-Level Hypotheses
+- Most likely bug patterns in the C code
+- Specific APIs that may be misused
+- Error-path and loop-path leak hypotheses
+
+6. Risk Assessment Table
+Columns:
+- Suspected source
+- Severity
+- Confidence
+- Operational impact
+- Recommended next step
+
+7. Debugging Recommendations
+Include concrete next actions such as:
+- Rebuild with -g -O0
+- Test with valgrind --leak-check=full
+- Rebuild with AddressSanitizer / LeakSanitizer
+- Add allocation counters
+- Add cleanup labels for all error paths
+- Review ownership of returned pointers
+- Instrument malloc/free wrappers
+- Capture heap profiles over time
+
+8. Plain Language Summary
+Explain in simple terms for a non-developer.
+
+C-Specific Checks:
+- malloc/calloc/realloc/free balance
+- strdup/strndup ownership
+- asprintf/vasprintf leaks
+- Error-path cleanup gaps
+- Long-running loop allocation growth
+- mmap vs heap allocation behavior
+- glibc allocator retention vs real leak
+- Thread-specific resource leaks
+
+IMPORTANT:
+- Save the final report as /tmp/c_memory_leak_analysis_[PID].md
+- Make the report practical and evidence-based
+- Do not just paste command output; interpret it
+- Clearly separate facts, hypotheses, and uncertainty
+
+```
+
